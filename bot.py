@@ -8,7 +8,7 @@ app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
 # آیدی پشتیبانی
 support_id = "@Unlock_mobile_com"
 
-# منوی اصلی
+# منوی دکمه‌های درون‌خطی
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
@@ -41,7 +41,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "سامسونگ، شیائومی، هوآوی با CPU مدیاتک، کوالکام، اگزینوس\n\n"
             "🔹 نیاز به باکس؟ خیر، فقط دو نرم‌افزار نیاز هست که بعد از خرید ارسال می‌شود\n"
             "🔹 ویندوز موردنیاز؟ ویندوز 10 پرو، 64 بیت\n"
-            "🔹 سخت‌افزار؟ i5 به بالا، رم 8 گیگ، هارد SSD فرمت GPT\n\n"
+            "🔹 سخت‌افزار؟ i5 به بالا، رم 8 گیگ، هارد SSD فرمت GPT\n"
             "🔹 آموزش ویدیویی؟ بله، در سایت موجود است\n"
             "🔹 پشتیبانی؟ تلگرام و واتساپ\n"
             "🔹 آپدیت؟ بله\n\n"
