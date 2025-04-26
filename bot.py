@@ -1,63 +1,100 @@
 import os
-from flask import Flask
-from threading import Thread
+from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# محیط وب برای زنده نگه داشتن
-app = Flask('')
+# گرفتن توکن و آدرس سرور از محیط
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+APP_URL = os.environ["APP_URL"]
 
-@app.route('/')
-def home():
-    return "I'm alive"
+# ساخت اپلیکیشن تلگرام
+application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-def run():
-    app.run(host='0.0.0.0', port=8080)
+# آیدی پشتیبانی
+support_id = "@Unlock_mobile_com"
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# توکن رباتت رو اینجا بذار
-TOKEN = '8000438969:AAFhj0ZEcVUehcY268sXcb26DUnCOiANlj8'
-
-# شروع کار ربات
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# منوی دکمه‌های درون‌خطی
+def main_menu_keyboard():
     keyboard = [
-        [InlineKeyboardButton("لایسنس", callback_data='license')],
-        [InlineKeyboardButton("کارت", callback_data='card')]
+        [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
+        [InlineKeyboardButton("📚 آموزش نصب و فعال‌سازی", url="https://xn--hgbk0gh11c.com/آموزش-آنلاک-گوشی-موبایل-بدون-حذف-اطلاع/")],
+        [InlineKeyboardButton("💳 شرایط خرید لایسنس", callback_data="license")],
+        [InlineKeyboardButton("💳 شماره کارت", callback_data="card")],
+        [InlineKeyboardButton("🌐 سایت رسمی", url="https://xn--hgbk0gh11c.com/")],
+        [InlineKeyboardButton("📩 پشتیبانی تلگرام", url="https://t.me/Unlock_mobile_com")]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('سلام! یکی از گزینه‌ها رو انتخاب کن:', reply_markup=reply_markup)
+    return InlineKeyboardMarkup(keyboard)
 
+# استارت
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 به ربات رسمی وب‌سایت آنلاک خوش آمدید!\n\n"
+        "لطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
+        reply_markup=main_menu_keyboard()
+    )
+
+# هندلر کلیک روی دکمه‌ها
 async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "license":
+    if query.data == "faq":
         await query.edit_message_text(
-            text="🔑 لایسنس خریداری شد ✅",
+            "💥 سوالات شما 💥\n"
+            "در مورد دوره بازیابی رمز گوشی\n\n"
+            "🔹 چه مدل گوشی‌هایی رو میشه باز کرد؟\n"
+            "سامسونگ، شیائومی، هوآوی با CPU مدیاتک، کوالکام، اگزینوس\n\n"
+            "🔹 نیاز به باکس؟ خیر، فقط دو نرم‌افزار نیاز هست که بعد از خرید ارسال می‌شود\n\n"
+            "🔹 ویندوز موردنیاز؟ ویندوز 10 پرو، 64 بیت\n"
+            "🔹 سخت‌افزار؟ i5 به بالا، رم 8 گیگ، هارد SSD فرمت GPT\n\n"
+            "🔹 آموزش ویدیویی؟ بله، در سایت موجود است\n"
+            "🔹 پشتیبانی؟ تلگرام و واتساپ\n"
+            "🔹 آپدیت؟ بله\n\n"
+            "🔹 نرم‌افزار MD NEXT تا اندروید 8 بدون حذف اطلاعات\n"
+            "🔹 نرم‌افزار OXYGEN تا نسخه‌های جدید اندروید\n\n"
+            "📌 مدل‌های قابل پشتیبانی پس از وارد کردن مدل در نرم‌افزار نمایش داده می‌شوند\n\n"
+            f"📩 پشتیبانی: {support_id}",
+            reply_markup=main_menu_keyboard()
+        )
+
+    elif query.data == "license":
+        await query.edit_message_text(
+            "💳 شرایط خرید لایسنس:\n\n"
+            "۱- ابتدا آموزش نصب را از سایت مشاهده کنید.\n"
+            "۲- پس از پرداخت و ارسال رسید به پشتیبانی، فایل نصب و کرک ارسال می‌شود.\n"
+            "۳- بعد از نصب، Hardware ID سیستم خود را به پشتیبانی بفرستید تا لایسنس برای شما ساخته شود.\n\n"
+            f"📩 پشتیبانی: {support_id}",
             reply_markup=main_menu_keyboard()
         )
 
     elif query.data == "card":
         await query.edit_message_text(
-            text="💳 اطلاعات کارت:\nشماره کارت: 1234-5678-9012-3456",
+            "💳 شماره کارت جهت واریز:\n\n"
+            "🔹 شماره کارت: ‎6104-3373-6006-3620‎\n"
+            "🔹 صاحب حساب: بهزاد خزانی\n\n"
+            "بعد از پرداخت لطفاً این موارد را به پشتیبانی ارسال کنید:\n"
+            "- نام نرم‌افزار خریداری شده\n"
+            "- نام و نام خانوادگی\n"
+            "- شماره موبایل\n"
+            "- تصویر رسید واریز\n\n"
+            f"📩 پشتیبانی: {support_id}",
             reply_markup=main_menu_keyboard()
         )
 
-def main_menu_keyboard():
-    keyboard = [
-        [InlineKeyboardButton("برگشت به منو اصلی", callback_data='start')]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+# اضافه کردن فرمان‌ها
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CallbackQueryHandler(button_click))
 
-def main():
-    keep_alive()
-    app_bot = ApplicationBuilder().token(TOKEN).build()
-    app_bot.add_handler(CommandHandler('start', start))
-    app_bot.add_handler(CallbackQueryHandler(button_click))
-    app_bot.run_polling()
+# ساخت اپلیکیشن Flask
+flask_app = Flask(__name__)
 
-if __name__ == '__main__':
-    main()
+@flask_app.route("/", methods=["GET", "POST"])
+def webhook():
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        application.update_queue.put_nowait(update)
+    return "OK"
+
+if __name__ == "__main__":
+    application.bot.set_webhook(url=f"{APP_URL}/")
+    flask_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
