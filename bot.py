@@ -1,14 +1,20 @@
 import os
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from flask import Flask
+import threading
 
 # گرفتن توکن از محیط
-app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+
+# تعریف ربات
+app_telegram = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # آیدی پشتیبانی
 support_id = "@Unlock_mobile_com"
 
-# منوی دکمه‌های درون‌خطی
+# دکمه‌های منوی اصلی
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
@@ -36,18 +42,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "faq":
         await query.edit_message_text(
             "💥 سوالات شما 💥\n"
-            "در مورد دوره بازیابی رمز گوشی\n\n"
-            "🔹 چه مدل گوشی‌هایی رو میشه باز کرد؟\n"
-            "سامسونگ، شیائومی، هوآوی با CPU مدیاتک، کوالکام، اگزینوس\n\n"
-            "🔹 نیاز به باکس؟ خیر، فقط دو نرم‌افزار نیاز هست که بعد از خرید ارسال می‌شود\n"
-            "🔹 ویندوز موردنیاز؟ ویندوز 10 پرو، 64 بیت\n"
-            "🔹 سخت‌افزار؟ i5 به بالا، رم 8 گیگ، هارد SSD فرمت GPT\n"
-            "🔹 آموزش ویدیویی؟ بله، در سایت موجود است\n"
-            "🔹 پشتیبانی؟ تلگرام و واتساپ\n"
-            "🔹 آپدیت؟ بله\n\n"
-            "🔹 نرم‌افزار MD NEXT تا اندروید 8 بدون حذف اطلاعات\n"
-            "🔹 نرم‌افزار OXYGEN تا نسخه‌های جدید اندروید\n\n"
-            "📌 مدل‌های قابل پشتیبانی پس از وارد کردن مدل در نرم‌افزار نمایش داده می‌شوند\n\n"
+            "🔹 چه مدل گوشی‌هایی رو میشه باز کرد؟ سامسونگ، شیائومی، هوآوی و ...\n"
+            "🔹 نیاز به باکس؟ خیر\n"
+            "🔹 ویندوز؟ ویندوز ۱۰ پرو\n"
             f"📩 پشتیبانی: {support_id}",
             reply_markup=main_menu_keyboard()
         )
@@ -55,30 +52,38 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "license":
         await query.edit_message_text(
             "💳 شرایط خرید لایسنس:\n\n"
-            "۱- ابتدا آموزش نصب را از سایت مشاهده کنید.\n"
-            "۲- پس از پرداخت و ارسال رسید به پشتیبانی، فایل نصب و کرک ارسال می‌شود.\n"
-            "۳- بعد از نصب، Hardware ID سیستم خود را به پشتیبانی بفرستید تا لایسنس برای شما ساخته شود.\n\n"
-            f"📩 پشتیبانی: {support_id}",
+            "۱- مشاهده آموزش\n"
+            "۲- پرداخت و ارسال رسید\n"
+            "۳- ارسال Hardware ID\n"
+            f"\n📩 پشتیبانی: {support_id}",
             reply_markup=main_menu_keyboard()
         )
 
     elif query.data == "card":
         await query.edit_message_text(
-            "💳 شماره کارت جهت واریز:\n\n"
+            "💳 شماره کارت:\n\n"
             "🔹 شماره کارت: ‎6104-3373-6006-3620‎\n"
-            "🔹 صاحب حساب: بهزاد خزانی\n\n"
-            "بعد از پرداخت لطفاً این موارد را به پشتیبانی ارسال کنید:\n"
-            "- نام نرم‌افزار خریداری شده\n"
-            "- نام و نام خانوادگی\n"
-            "- شماره موبایل\n"
-            "- تصویر رسید واریز\n\n"
-            f"📩 پشتیبانی: {support_id}",
+            "🔹 بهزاد خزانی\n"
+            "\nبعد از پرداخت اطلاعات رو به پشتیبانی بفرستید.",
             reply_markup=main_menu_keyboard()
         )
 
 # ثبت فرمان‌ها
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(button_click))
+app_telegram.add_handler(CommandHandler("start", start))
+app_telegram.add_handler(CallbackQueryHandler(button_click))
 
-# اجرای ربات
-app.run_polling()
+# ---- سرور Flask برای باز کردن پورت ----
+app_flask = Flask(__name__)
+
+@app_flask.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app_flask.run(host="0.0.0.0", port=port)
+
+# ---- اجرای ربات و Flask با هم ----
+if __name__ == "__main__":
+    threading.Thread(target=run_flask).start()
+    app_telegram.run_polling()
