@@ -1,19 +1,14 @@
 import os
-from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# گرفتن توکن و آدرس سرور از محیط
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-APP_URL = os.environ["APP_URL"]
-
-# ساخت اپلیکیشن تلگرام
-application = ApplicationBuilder().token(BOT_TOKEN).build()
+# گرفتن توکن از محیط
+app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
 
 # آیدی پشتیبانی
 support_id = "@Unlock_mobile_com"
 
-# منوی دکمه‌های درون‌خطی
+# منوی اصلی
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
@@ -44,7 +39,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "در مورد دوره بازیابی رمز گوشی\n\n"
             "🔹 چه مدل گوشی‌هایی رو میشه باز کرد؟\n"
             "سامسونگ، شیائومی، هوآوی با CPU مدیاتک، کوالکام، اگزینوس\n\n"
-            "🔹 نیاز به باکس؟ خیر، فقط دو نرم‌افزار نیاز هست که بعد از خرید ارسال می‌شود\n\n"
+            "🔹 نیاز به باکس؟ خیر، فقط دو نرم‌افزار نیاز هست که بعد از خرید ارسال می‌شود\n"
             "🔹 ویندوز موردنیاز؟ ویندوز 10 پرو، 64 بیت\n"
             "🔹 سخت‌افزار؟ i5 به بالا، رم 8 گیگ، هارد SSD فرمت GPT\n\n"
             "🔹 آموزش ویدیویی؟ بله، در سایت موجود است\n"
@@ -81,20 +76,9 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=main_menu_keyboard()
         )
 
-# اضافه کردن فرمان‌ها
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CallbackQueryHandler(button_click))
+# ثبت فرمان‌ها
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(button_click))
 
-# ساخت اپلیکیشن Flask
-flask_app = Flask(__name__)
-
-@flask_app.route("/", methods=["GET", "POST"])
-def webhook():
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), application.bot)
-        application.update_queue.put_nowait(update)
-    return "OK"
-
-if __name__ == "__main__":
-    application.bot.set_webhook(url=f"{APP_URL}/")
-    flask_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+# اجرای ربات
+app.run_polling()
