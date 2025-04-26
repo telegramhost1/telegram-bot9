@@ -1,13 +1,15 @@
+from flask import Flask
+from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# توکن ربات
+# --- ربات تلگرام ---
+
+# توکن رباتت اینجا بزار
 app = ApplicationBuilder().token("8000438969:AAFhj0ZEcVUehcY268sXcb26DUnCOiANlj8").build()
 
-# آیدی پشتیبانی
 support_id = "@Unlock_mobile_com"
 
-# منوی دکمه‌های درون‌خطی
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
@@ -19,7 +21,6 @@ def main_menu_keyboard():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# استارت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 به ربات رسمی وب‌سایت آنلاک خوش آمدید!\n\n"
@@ -27,7 +28,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_menu_keyboard()
     )
 
-# هندلر کلیک روی دکمه‌ها
 async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -75,9 +75,24 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=main_menu_keyboard()
         )
 
-# ثبت فرمان‌ها
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button_click))
 
-# اجرای ربات
+# --- سرور Flask برای باز نگه داشتن پورت ---
+
+server = Flask('')
+
+@server.route('/')
+def home():
+    return "Bot is running!"
+
+def run():
+    server.run(host="0.0.0.0", port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# اجرای سرور و ربات
+keep_alive()
 app.run_polling()
