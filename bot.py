@@ -5,7 +5,8 @@ from telegram.ext import (
     ContextTypes
 )
 import os
-import asyncio  # ✅ این خط اضافه شده
+import asyncio
+import threading
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 DOMAIN = os.environ["WEBHOOK_URL"]
@@ -56,11 +57,13 @@ def webhook():
     app_bot.update_queue.put(update)
     return "OK"
 
-# ---------- فعال‌سازی Webhook و اجرای سرور ----------
-async def setup_webhook():
-    await app_bot.bot.set_webhook(f"{DOMAIN}/{BOT_TOKEN}")
+# ---------- اجرای webhook در ترد جدا ----------
+def set_webhook():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(app_bot.bot.set_webhook(f"{DOMAIN}/{BOT_TOKEN}"))
 
 if __name__ == "__main__":
-    asyncio.run(setup_webhook())
+    threading.Thread(target=set_webhook).start()
     port = int(os.environ.get("PORT", 5000))
     server.run(host="0.0.0.0", port=port)
