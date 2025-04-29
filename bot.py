@@ -1,46 +1,53 @@
-import os
 from flask import Flask, request
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler,
+    ContextTypes
+)
+import os
+import asyncio
 
-BOT_TOKEN   = os.environ["BOT_TOKEN"]
-# آدرس دامنه‌ای که رندر یا رایلوِی بهت داده (بدون اسلش آخر)
-DOMAIN      = os.environ["WEBHOOK_URL"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+DOMAIN = os.environ["WEBHOOK_URL"]
 
-# ----- کد ربات -----
 app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
-support_id = "@Unlock_mobile_com"
-def main_menu_keyboard():
-    keyboard = [
-        [InlineKeyboardButton("📘 راهنما و سوالات پرتکرار", callback_data="faq")],
-        [InlineKeyboardButton("📚 آموزش نصب و فعال‌سازی", url="https://…")],
-        [InlineKeyboardButton("💳 شرایط خرید لایسنس", callback_data="license")],
-        [InlineKeyboardButton("💳 شماره کارت", callback_data="card")],
-        [InlineKeyboardButton("🌐 سایت رسمی", url="https://…")],
-        [InlineKeyboardButton("📩 پشتیبانی تلگرام", url="https://t.me/…")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
+# ---------- دستور start ----------
 async def start_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 سلام! یکی از گزینه‌ها رو انتخاب کن:", reply_markup=main_menu_keyboard())
+    keyboard = [
+        [InlineKeyboardButton("❓ سوالات پر تکرار", callback_data="faq")],
+        [InlineKeyboardButton("📜 مجوزها", callback_data="license")],
+        [InlineKeyboardButton("💳 شماره کارت", callback_data="card")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("به ربات خوش آمدید. یک گزینه را انتخاب کنید 👇", reply_markup=reply_markup)
 
+# ---------- پاسخ به دکمه‌ها ----------
 async def button_click(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    
     if q.data == "faq":
-        # … مثل قبل …
-        await q.edit_message_text("💥 سوالات …", reply_markup=main_menu_keyboard())
+        await q.edit_message_text("❓ سوالات پر تکرار:", reply_markup=main_menu_keyboard())
     elif q.data == "license":
-        await q.edit_message_text("💳 شرایط …", reply_markup=main_menu_keyboard())
+        await q.edit_message_text("📜 مجوزها:", reply_markup=main_menu_keyboard())
     elif q.data == "card":
-        await q.edit_message_text("💳 شماره کارت …", reply_markup=main_menu_keyboard())
+        await q.edit_message_text("💳 شماره کارت:", reply_markup=main_menu_keyboard())
 
+# ---------- کیبورد اصلی ----------
+def main_menu_keyboard():
+    keyboard = [
+        [InlineKeyboardButton("❓ سوالات پر تکرار", callback_data="faq")],
+        [InlineKeyboardButton("📜 مجوزها", callback_data="license")],
+        [InlineKeyboardButton("💳 شماره کارت", callback_data="card")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# ---------- ثبت هندلرها ----------
 app_bot.add_handler(CommandHandler("start", start_cmd))
 app_bot.add_handler(CallbackQueryHandler(button_click))
-# ----------------------
 
-# ----- وب‌سرور Flask برای دریافت وبهوک -----
+# ---------- سرور Flask ----------
 server = Flask(__name__)
 
 @server.route(f"/{BOT_TOKEN}", methods=["POST"])
@@ -49,10 +56,11 @@ def webhook():
     app_bot.update_queue.put(update)
     return "OK"
 
-if __name__ == "__main__":
-    # ست کردن وبهوک روی تلگرام
-    app_bot.bot.set_webhook(f"{DOMAIN}/{BOT_TOKEN}")
+# ---------- فعال‌سازی Webhook و اجرای سرور ----------
+async def setup_webhook():
+    await app_bot.bot.set_webhook(f"{DOMAIN}/{BOT_TOKEN}")
 
-    # راه‌اندازی Flask
+if __name__ == "__main__":
+    asyncio.run(setup_webhook())
     port = int(os.environ.get("PORT", 5000))
     server.run(host="0.0.0.0", port=port)
