@@ -52,7 +52,8 @@ async def main():
         url_path=BOT_TOKEN,
         webhook_url=f"{DOMAIN}/{BOT_TOKEN}"
     )
-
+    import asyncio
+asyncio.run(setup_webhook())
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
