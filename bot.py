@@ -1,13 +1,40 @@
-import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from flask import Flask, request
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler, ContextTypes
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler,
+    ContextTypes
 )
+import os
+import asyncio  # ✅ این خط اضافه شده
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-DOMAIN = os.environ["WEBHOOK_URL"]  # مثل: https://telegram-bot9-leuz.onrender.com
+DOMAIN = os.environ["WEBHOOK_URL"]
 
-# ---------- کیبورد ---------- #
+app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+
+# ---------- دستور start ----------
+async def start_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("❓ سوالات پر تکرار", callback_data="faq")],
+        [InlineKeyboardButton("📜 مجوزها", callback_data="license")],
+        [InlineKeyboardButton("💳 شماره کارت", callback_data="card")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("به ربات خوش آمدید. یک گزینه را انتخاب کنید 👇", reply_markup=reply_markup)
+
+# ---------- پاسخ به دکمه‌ها ----------
+async def button_click(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    
+    if q.data == "faq":
+        await q.edit_message_text("❓ سوالات پر تکرار:", reply_markup=main_menu_keyboard())
+    elif q.data == "license":
+        await q.edit_message_text("📜 مجوزها:", reply_markup=main_menu_keyboard())
+    elif q.data == "card":
+        await q.edit_message_text("💳 شماره کارت:", reply_markup=main_menu_keyboard())
+
+# ---------- کیبورد اصلی ----------
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("❓ سوالات پر تکرار", callback_data="faq")],
@@ -16,44 +43,24 @@ def main_menu_keyboard():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# ---------- فرمان /start ---------- #
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "به ربات خوش آمدید 👇",
-        reply_markup=main_menu_keyboard()
-    )
+# ---------- ثبت هندلرها ----------
+app_bot.add_handler(CommandHandler("start", start_cmd))
+app_bot.add_handler(CallbackQueryHandler(button_click))
 
-# ---------- پاسخ به دکمه‌ها ---------- #
-async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    responses = {
-        "faq": "❓ سوالات پر تکرار:",
-        "license": "📜 مجوزها:",
-        "card": "💳 شماره کارت:"
-    }
-    await query.edit_message_text(
-        text=responses.get(query.data, "خطا!"),
-        reply_markup=main_menu_keyboard()
-    )
+# ---------- سرور Flask ----------
+server = Flask(__name__)
 
-# ---------- اجرای Webhook ---------- #
-async def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+@server.route(f"/{BOT_TOKEN}", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), app_bot.bot)
+    app_bot.update_queue.put(update)
+    return "OK"
 
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CallbackQueryHandler(button_click))
+# ---------- فعال‌سازی Webhook و اجرای سرور ----------
+async def setup_webhook():
+    await app_bot.bot.set_webhook(f"{DOMAIN}/{BOT_TOKEN}")
 
-    await app.bot.set_webhook(url=f"{DOMAIN}/{BOT_TOKEN}")
-
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        url_path=BOT_TOKEN,
-        webhook_url=f"{DOMAIN}/{BOT_TOKEN}"
-    )
-    import asyncio
-asyncio.run(setup_webhook())
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    asyncio.run(setup_webhook())
+    port = int(os.environ.get("PORT", 5000))
+    server.run(host="0.0.0.0", port=port)
